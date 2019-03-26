@@ -3,7 +3,6 @@ import psycopg2
 import hashlib
 from flask import Flask, render_template, json, request, session, redirect
 from werkzeug import generate_password_hash, check_password_hash
-from flaskext.mysql import MySQL
 
 
 #initialize the flask and SQL Objects
@@ -91,7 +90,7 @@ def validate():
 @app.route('/signUp', methods=['POST'])
 def signUp():
 	"""
-	method to deal with creating a new user in the MySQL Database
+	method to deal with creating a new user in the Postgre Database
 	"""
 	print("signing up user...")
 	#create MySQL Connection
@@ -160,6 +159,40 @@ def addWish():
     finally:
         cursor.close()
         conn.close()
+
+@app.route('/getBooks')
+def getBooks():
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    try:
+        if session.get('user'):
+            _user = session.get('user')[0]
+            print(_user)
+            cursor.execute('SELECT id, name, gender FROM books')
+            books = cursor.fetchall()
+
+            books_list = []
+            for book in wishes:
+                book_dict = {
+                        'Id': book[0],
+                        'Title': wish[1],
+                        'Gender': wish[2]
+				}
+                books_list.append(book_dict)
+            
+            print(books_list)
+            return json.dumps(books_list)
+
+        else:
+            return render_template('error.html', error = 'Unauthorized Access')
+
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+
+    finally:
+    	cursor.close()
+    	conn.close()
+
 
 @app.route('/getWish')
 def getWish():

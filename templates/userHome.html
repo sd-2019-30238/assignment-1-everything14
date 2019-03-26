@@ -15,7 +15,7 @@
 <script>
     $(function() {
         $.ajax({
-            url: '/getWish',
+            url: '/getBooks',
             type: 'GET',
             success: function(res) {
                 var div = $('<div>')
@@ -26,14 +26,15 @@
                         .attr('class', 'list-group-item-heading'),
                         $('<p>')
                         .attr('class', 'list-group-item-text')));
-                var wishObj = JSON.parse(res);
-				var wish = '';
+                console.log(res)
+                var bookObj = JSON.parse(res);
+				var book = '';
 				
-				$.each(wishObj,function(index, value){
-					wish = $(div).clone();
-					$(wish).find('h4').text(value.Title);
-					$(wish).find('p').text(value.Description);
-					$('.jumbotron').append(wish);
+				$.each(BookObj,function(index, value){
+					book = $(div).clone();
+					$(book).find('h4').text(value.Title);
+					$(book).find('p').text(value.Gender);
+					$('.jumbotron').append(book);
                         });
                     },
                         error: function(error) {
