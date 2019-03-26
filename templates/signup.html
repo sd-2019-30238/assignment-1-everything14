@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <title>Python Flask Bucket List App</title>
+
+    <link rel="stylesheet" href="../static/css/signup.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+
+    <script src="../static/js/jquery-3.2.1.js"></script>
+    <script src="../static/js/SignUp.js"></script>   
+
+  </head>
+
+  <body>
+  <!--create the Navbar-->
+    <div class="container">
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+            <h3 class="navbar-brand">Python Flask App</h3>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample05" aria-controls="navbarsExample05" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarsExample05">
+                <ul class="navbar-nav mr-auto">
+                  <li class="nav-item active">
+                    <a class="nav-link" href="main">Home</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#">SignUp<span class="sr-only">(current)</span></a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="showSignIn">SignIn</a>
+                  </li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+
+  <!--Set up alerts to be shown if there is success or failure-->
+    <div class="container" id="success-container">
+      <div class="alert alert-success" id="success">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span> 
+        <strong id="success-msg"></strong>
+      </div>
+    </div>
+
+  <!-- set up form-->
+    <div class="container">
+      <div class="jumbotron">
+        <h1>Bucket List App</h1>
+        <form class="form-signin">
+        <label for="inputName" class="sr-only">Name</label>
+        <input type="name" name="inputName" id="inputName" class="form-control required" placeholder="Name" required autofocus>
+        <label for="inputEmail" class="sr-only">Email address</label>
+        <input type="email" name="inputEmail" id="inputEmail" class="form-control required" placeholder="Email address" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" name="inputPassword" id="inputPassword" class="form-control required" placeholder="Password" required>
+        <button id="btnSignUp" class="btn btn-lg btn-primary btn-block" type="button">Sign up</button>
+      </form>
+      </div>
+    </div>
+  </body>
+</html>
