@@ -200,15 +200,8 @@ def getBooks():
             cursor.execute('SELECT id, title, author FROM books')
             books = cursor.fetchall()
 
-            books_list = []
-            for book in wishes:
-                book_dict = {
-                        'Id': book[0],
-                        'Title': wish[1],
-                        'Author': wish[2]
-				}
-                books_list.append(book_dict)
-            
+            books_list = [{"Id": book[0], "Title": book[1], "Author": book[2]} for book in books]
+
             print(books_list)
             return json.dumps(books_list)
 

@@ -26,11 +26,9 @@
                         .attr('class', 'list-group-item-heading'),
                         $('<p>')
                         .attr('class', 'list-group-item-text')));
-                console.log(res)
-                var bookObj = JSON.parse(res);
 				var book = '';
 				
-				$.each(BookObj,function(index, value){
+				$.each(JSON.parse(res),function(index, value){
 					book = $(div).clone();
 					$(book).find('h4').text(value.Title);
 					$(book).find('p').text(value.Gender);
@@ -64,12 +62,7 @@
 
         <div class="jumbotron">
             <h1>Welcome Home {{username}}!</h1>
-            <div class="list-group">
-                <a href="#" class="list-group-item active">
-                    <h4 class="list-group-item-heading">Wish Title</h4>
-                    <p class="list-group-item-text">Wish Description</p>
-                </a>
-            </div>
+            <div class="list-group"></div>
         </div>
 
         <footer class="footer">       
