@@ -25,7 +25,7 @@
                     <a class="nav-link" href="logout">Logout</a>
                   </li>
                   <li class="navbar-nav mr-auto">
-                    <a class="nav-link" href="wishlist">WishList</a>
+                    <a class="nav-link" href="wishlist">Add a book</a>
                   </li>
                 </ul>
             </div>
@@ -33,10 +33,10 @@
 
         <section>
             <div class="jumbotron">
-            <form class="form-horizontal" method="post" action="/addWish">
+            <form class="form-horizontal" method="post" action="/addBook">
                 <fieldset>
                     <!-- Form Name -->
-                    <legend>Create Your Wish</legend>
+                    <legend>Add a book</legend>
  
                     <!-- Text input-->
                     <div class="form-group">
@@ -46,11 +46,19 @@
                         </div>
                     </div>
  
-                    <!-- Textarea -->
+                    <!-- Text input -->
                     <div class="form-group">
-                        <label class="col-md-4 control-label" for="txtPost">Post</label>
+                        <label class="col-md-4 control-label" for="txtAuthor">Author</label>
                         <div class="col-md-4">
-                            <textarea class="form-control" id="txtPost" name="inputDescription" placeholder="Description"></textarea>
+                            <input id="txtAuthor" name="inputAuthor" type="text" placeholder="Author" class="form-control input-md">
+                        </div>
+                    </div>
+
+                    <!-- Text input -->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="txtGenre">Genre</label>
+                        <div class="col-md-4">
+                            <input id="txtGenre" name="inputGenre" type="text" placeholder="Genre" class="form-control input-md">
                         </div>
                     </div>
  
@@ -58,7 +66,7 @@
                     <div class="form-group">
                         <label class="col-md-4 control-label" for="singlebutton"></label>
                         <div class="col-md-4">
-                            <input id="singlebutton" name="singlebutton" class="btn btn-primary" type="submit" value="Publish" />
+                            <input id="singlebutton" name="singlebutton" class="btn btn-primary" type="submit" value="Add" />
                         </div>
                     </div>
  

@@ -129,6 +129,34 @@ def signUp():
 		conn.close()
 	return "OK"
 
+
+@app.route('/addBook',methods=['POST'])
+def addBook():
+    print("in addBook")
+    try:
+        if session.get('user'):
+            _title = request.form['inputTitle']
+            _genre = request.form['inputGenre']
+            _author = request.form['inputAuthor']
+            _user = session.get('user')[0]
+            print("title:",_title,"\n genre:",_genre, "\n author: ", _author, "\n user:",_user)
+            conn = psycopg2.connect(**connection_parameters)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO books (title, author, genre, available) values (%s, %s, %s, True)", (_title, _author, _genre))
+            conn.commit()
+ 
+        else:
+            return render_template('error.html',error = 'Unauthorized Access')
+    except Exception as e:
+        print("in exception for AddBook")
+        return render_template('error.html',error = str(e))
+
+    finally:
+        cursor.close()
+        conn.close()
+    return "OK"
+
+"""
 @app.route('/addWish',methods=['POST'])
 def addWish():
     print("in addWIsh")
@@ -159,6 +187,7 @@ def addWish():
     finally:
         cursor.close()
         conn.close()
+"""
 
 @app.route('/getBooks')
 def getBooks():
@@ -168,7 +197,7 @@ def getBooks():
         if session.get('user'):
             _user = session.get('user')[0]
             print(_user)
-            cursor.execute('SELECT id, name, gender FROM books')
+            cursor.execute('SELECT id, title, author FROM books')
             books = cursor.fetchall()
 
             books_list = []
@@ -176,7 +205,7 @@ def getBooks():
                 book_dict = {
                         'Id': book[0],
                         'Title': wish[1],
-                        'Gender': wish[2]
+                        'Author': wish[2]
 				}
                 books_list.append(book_dict)
             
@@ -193,7 +222,7 @@ def getBooks():
     	cursor.close()
     	conn.close()
 
-
+"""
 @app.route('/getWish')
 def getWish():
     conn = psycopg2.connect()
@@ -225,7 +254,7 @@ def getWish():
     finally:
     	cursor.close()
     	conn.close()
-
+"""
 
 if __name__ == "__main__":
     app.run()
