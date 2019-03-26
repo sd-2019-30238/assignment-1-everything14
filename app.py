@@ -1,5 +1,6 @@
 #imports
 import psycopg2
+import hashlib
 from flask import Flask, render_template, json, request, session, redirect
 from werkzeug import generate_password_hash, check_password_hash
 from flaskext.mysql import MySQL
@@ -7,15 +8,16 @@ from flaskext.mysql import MySQL
 
 #initialize the flask and SQL Objects
 app = Flask(__name__)
-mysql = MySQL()
 
 #initializa secret key
 app.secret_key='This is my secret key'
 
-pg_user = "postgres"
-pg_password = "docker"
-pg_database = "postgres"
-pg_host = "localhost"
+connection_parameters = {
+        'host':"localhost",
+        'database': 'postgres',
+        'user': "postgres",
+        'password': "docker"
+    }
 
 #define methods for routes (what to do and display)
 @app.route("/")
@@ -54,12 +56,12 @@ def logout():
 @app.route('/validateLogin', methods=['POST'])
 def validate():
 	try:
-		_username = request.form['inputEmail']
+		_username = request.form['inputUsername']
 		_password = request.form['inputPassword']
 		print("Username:", _username, "\n Password:", _password)
 
 		#create Postgres Connection
-		conn = psycopg2.connect('')
+		conn = psycopg2.connect(**connection_parameters)
 		#create a cursor to query the stored procedure
 		cursor = conn.cursor()
 		print("successfully connected to postgres!")
@@ -69,7 +71,7 @@ def validate():
 		users = cursor.fetchall()
 		#acctually validate these users
 		if len(users)>0:
-			_hashed_password = generate_password_hash(_password)
+			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
 			if users[0][2] == _hashed_password:
 				session['user']=users[0]
 				return redirect('/userHome')
@@ -93,7 +95,7 @@ def signUp():
 	"""
 	print("signing up user...")
 	#create MySQL Connection
-	conn = psycopg2.connect("")
+	conn = psycopg2.connect(**connection_parameters)
 	#create a cursor to query the stored procedure
 	cursor = conn.cursor()
 
@@ -107,7 +109,7 @@ def signUp():
 		if _name and _email and _password:
 			print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
 			#hash passowrd for security
-			_hashed_password = generate_password_hash(_password)
+			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
 			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
@@ -126,6 +128,7 @@ def signUp():
 		print('ending...')
 		cursor.close()
 		conn.close()
+	return "OK"
 
 @app.route('/addWish',methods=['POST'])
 def addWish():
