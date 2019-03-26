@@ -112,7 +112,7 @@ def signUp():
 			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email) values (%s, %s, %s)', [_name, _hashed_password, _email])
+			cursor.execute('INSERT INTO users (username, password, email, role) values (%s, %s, %s, \'user\')', [_name, _hashed_password, _email])
 			conn.commit()
 
 		else:
@@ -154,7 +154,7 @@ def addBook():
     finally:
         cursor.close()
         conn.close()
-    return "OK"
+    return redirect('/userHome')
 
 """
 @app.route('/addWish',methods=['POST'])
