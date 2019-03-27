@@ -6,7 +6,7 @@ from werkzeug import generate_password_hash, check_password_hash
 
 
 #initialize the flask and SQL Objects
-app = Flask(__name__)
+app = Flask(__name__, template_folder="view/static/templates")
 
 #initializa secret key
 app.secret_key='This is my secret key'
@@ -47,10 +47,49 @@ def showUserHome():
 	else:
 		return render_template('error.html', error = "Invalid User Credentials")
 
-@app.route('/logout')
-def logout():
-	session.pop('user', None)
-	return redirect('/')
+
+@app.route('/signUp', methods=['POST'])
+def signUp():
+	"""
+	method to deal with creating a new user in the Postgre Database
+	"""
+	print("signing up user...")
+	#create MySQL Connection
+	conn = psycopg2.connect(**connection_parameters)
+	#create a cursor to query the stored procedure
+	cursor = conn.cursor()
+
+	try:
+		#read in values from frontend
+		_name = request.form['inputName']
+		_email = request.form['inputEmail']
+		_password = request.form['inputPassword']
+
+		#Make sure we got all the values	
+		if _name and _email and _password:
+			print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
+			#hash passowrd for security
+			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
+			print("Hashed Password:", _hashed_password)
+
+			#call jQuery to make a POST request to the DB with the info
+			cursor.execute('INSERT INTO users (username, password, email, role) values (%s, %s, %s, \'user\')', [_name, _hashed_password, _email])
+			conn.commit()
+
+		else:
+			print('fields not submitted')
+			return 'Enter the required fields'
+
+	except Exception as ex:
+		print('got an exception: ', ex)
+		return json.dumps({'error':str(ex)})
+
+	finally:
+		print('ending...')
+		cursor.close()
+		conn.close()
+	return "OK"
+
 
 @app.route('/validateLogin', methods=['POST'])
 def validate():
@@ -87,47 +126,11 @@ def validate():
 		cursor.close()
 		conn.close()
 
-@app.route('/signUp', methods=['POST'])
-def signUp():
-	"""
-	method to deal with creating a new user in the Postgre Database
-	"""
-	print("signing up user...")
-	#create MySQL Connection
-	conn = psycopg2.connect(**connection_parameters)
-	#create a cursor to query the stored procedure
-	cursor = conn.cursor()
 
-	try:
-		#read in values from frontend
-		_name = request.form['inputName']
-		_email = request.form['inputEmail']
-		_password = request.form['inputPassword']
-
-		#Make sure we got all the values
-		if _name and _email and _password:
-			print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
-			#hash passowrd for security
-			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
-			print("Hashed Password:", _hashed_password)
-
-			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role) values (%s, %s, %s, \'user\')', [_name, _hashed_password, _email])
-			conn.commit()
-
-		else:
-			print('fields not submitted')
-			return 'Enter the required fields'
-
-	except Exception as ex:
-		print('got an exception: ', ex)
-		return json.dumps({'error':str(ex)})
-
-	finally:
-		print('ending...')
-		cursor.close()
-		conn.close()
-	return "OK"
+@app.route('/logout')
+def logout():
+	session.pop('user', None)
+	return redirect('/')
 
 
 @app.route('/addBook',methods=['POST'])
@@ -156,38 +159,6 @@ def addBook():
         conn.close()
     return redirect('/userHome')
 
-"""
-@app.route('/addWish',methods=['POST'])
-def addWish():
-    print("in addWIsh")
-    try:
-        if session.get('user'):
-            _title = request.form['inputTitle']
-            _description = request.form['inputDescription']
-            _user = session.get('user')[0]
-            print("title:",_title,"\n description:",_description,"\n user:",_user)
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            cursor.callproc('sp_addWish',(_title,_description,_user))
-            data = cursor.fetchall()
- 
-            if len(data) is 0:
-                conn.commit()
-                print("finished executing addWish")
-                return redirect('/userHome')
-            else:
-                return render_template('error.html',error = 'An error occurred!')
- 
-        else:
-            return render_template('error.html',error = 'Unauthorized Access')
-    except Exception as e:
-        print("in exception for AddWish")
-        return render_template('error.html',error = str(e))
-
-    finally:
-        cursor.close()
-        conn.close()
-"""
 
 @app.route('/getBooks')
 def getBooks():
@@ -197,10 +168,10 @@ def getBooks():
         if session.get('user'):
             _user = session.get('user')[0]
             print(_user)
-            cursor.execute('SELECT id, title, author FROM books')
+            cursor.execute('SELECT id, title, author, genre FROM books')
             books = cursor.fetchall()
 
-            books_list = [{"Id": book[0], "Title": book[1], "Author": book[2]} for book in books]
+            books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
 
             print(books_list)
             return json.dumps(books_list)
@@ -215,39 +186,43 @@ def getBooks():
     	cursor.close()
     	conn.close()
 
-"""
-@app.route('/getWish')
-def getWish():
-    conn = psycopg2.connect()
+@app.route('/<int:id>/getBook', methods=('POST',))
+def getBook(id):
+    conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    try:
-        if session.get('user'):
-            _user = session.get('user')[0]
-            print(_user)
-            cursor.callproc('sp_GetWishByUser',(_user,))
-            wishes = cursor.fetchall()
- 
-            wishes_dict = []
-            for wish in wishes:
-                wish_dict = {
-                        'Id': wish[0],
-                        'Title': wish[1],
-                        'Description': wish[2],
-                        'Date': wish[4]}
-                wishes_dict.append(wish_dict)
+    cursor.execute('SELECT * FROM books WHERE id = %s', [id])
+    book = cursor.fetchone()
+    
+    return book
 
-            return json.dumps(wishes_dict)
+@app.route('/<int:id>/deleteBook', methods=('POST',))
+def deleteBook(id):
+    getBook(id)
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM books WHERE id = %s', [id])
+    conn.commit()
 
-        else:
-            return render_template('error.html', error = 'Unauthorized Access')
+    return redirect('/userHome')
 
-    except Exception as e:
-        return render_template('error.html', error = str(e))
+@app.route('/<int:id>/viewBook')
+def viewBook(id):
+    if session.get("user"):
+        return render_template('viewBook.html', )
+    else:
+        return render_template('error.html', error = "Invalid User Credentials")
 
-    finally:
-    	cursor.close()
-    	conn.close()
-"""
+def insertTestData():
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO books (title, author, genre, available) values ('a', 'a', 'a', True)")
+    cursor.execute("INSERT INTO books (title, author, genre, available) values ('b', 'b', 'b', True)")
+    cursor.execute("INSERT INTO books (title, author, genre, available) values ('c', 'c', 'c', True)")
+    cursor.execute("INSERT INTO books (title, author, genre, available) values ('d', 'd', 'd', True)")
+    cursor.execute("INSERT INTO books (title, author, genre, available) values ('e', 'e', 'e', True)")
+    conn.commit()
+
 
 if __name__ == "__main__":
+    # insertTestData()
     app.run()

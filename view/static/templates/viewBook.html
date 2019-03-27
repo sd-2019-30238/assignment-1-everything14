@@ -9,29 +9,30 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
     <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
 
-    <script src="../static/js/jquery-3.2.1.js"></script>
-
 </head>
+
 <script>
     $(function() {
         $.ajax({
-            url: '/getBooks',
+            url: '/getBook',
             type: 'GET',
             success: function(res) {
                 var div = $('<div>')
                 .attr('class', 'list-group')
+                .append($(<form action="http://google.com"> <input type="submit" value="Go to Google" /> </form>))
                 .append($('<a>')
                     .attr('class', 'list-group-item active')
                     .append($('<h4>')
                         .attr('class', 'list-group-item-heading'),
                         $('<p>')
-                        .attr('class', 'list-group-item-text')));
+                        .attr('class', 'list-group-item-text')
+                        ));
 				var book = '';
 				
 				$.each(JSON.parse(res),function(index, value){
 					book = $(div).clone();
 					$(book).find('h4').text(value.Title);
-					$(book).find('p').text(value.Gender);
+					$(book).find('p').text(value.Genre);
 					$('.jumbotron').append(book);
                         });
                     },
@@ -41,11 +42,12 @@
         });
     });
 </script>
+
 <body>
     <div class="container">
+        <!--navbar-->
         <nav class="navbar navbar-expand-md navbar-dark bg-dark">
             <h3 class="navbar-brand">Python Flask App</h3>
-            <span class="navbar-text">Logged in as {{username}}</span>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample05" aria-controls="navbarsExample05" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -56,19 +58,7 @@
                   </li>
                   <li class="navbar-nav mr-auto">
                     <a class="nav-link" href="wishlist">Add a book</a>
+                  </li>
                 </ul>
             </div>
         </nav>
-
-        <div class="jumbotron">
-            <h1>Welcome Home {{username}}!</h1>
-            <div class="list-group"></div>
-        </div>
-
-        <footer class="footer">       
-        </footer>
- 
-    </div>
-</body>
- 
-</html>
