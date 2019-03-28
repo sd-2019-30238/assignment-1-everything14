@@ -24,8 +24,9 @@
                   <li class="nav-item active">
                     <a class="nav-link" href="logout">Logout</a>
                   </li>
-                  <li class="navbar-nav mr-auto">
-                    <a class="nav-link" href="wishlist">Add a book</a>
+                    <li class="navbar-nav mr-auto">
+                        <a class="nav-link" href="wishlist">Add a book</a>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -43,22 +44,13 @@
 </body>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
 <script>
     $(function() {
         $.ajax({
             url: '/getBooks',
             type: 'GET',
             success: function(res) {
-                var divUser = $('<div>')
-                .attr('class', 'list-group')
-                .append($('<a>')
-                    .append($('<h5">Title:</h5>').attr('class', 'list-group-item active'))
-                    .append($('<h4>').attr('class', 'list-group-item active'))
-                    .append($('<h5">Author:</h5>').attr('class', 'list-group-item active'))
-                    .append($('<p>').attr('class', 'list-group-item active'))
-                    .append($('<h5">Genre:</h5>').attr('class', 'list-group-item active'))
-                    .append($('<h3>').attr('class', 'list-group-item active'))
-                    .append($('<h1>&nbsp;</h1>')));
                 var div = $('<div>')
                 .attr('class', 'list-group')
                 .append($('<a>')
@@ -72,8 +64,7 @@
                     .append($('<h1>&nbsp;</h1>')));
 				var book = '';
                 
-                if (JSON.parse(res)[1][4] == "librarian"){
-				    $.each(JSON.parse(res)[0],function(index, value){
+				    $.each(JSON.parse(res),function(index, value){
 				    	book = $(div).clone();
 				    	$(book).find('h4').text(value.Title);
                         $(book).find('p').text(value.Author);
@@ -81,16 +72,6 @@
                         $(book).find('input').attr("onclick", "deleteBook(" + value.Id + ")");
 				    	$('.jumbotron').append(book);
                             });
-                }
-                else {
-                    $.each(JSON.parse(res)[0],function(index, value){
-				    	book = $(divUser).clone();
-				    	$(book).find('h4').text(value.Title);
-                        $(book).find('p').text(value.Author);
-                        $(book).find('h3').text(value.Genre);
-				    	$('.jumbotron').append(book);
-                            });
-                }
             },
             error: function(error) {
                 console.log(error);
@@ -117,8 +98,7 @@
                     .append($('<h1>&nbsp;</h1>')));
                 var user = '';
                 
-                if (JSON.parse(res)[1][4] == "librarian"){
-                    $.each(JSON.parse(res)[0],function(index, value){
+                    $.each(JSON.parse(res),function(index, value){
                         user = $(div).clone();
                         $(user).find('h4').text(value.Username);
                         $(user).find('p').text(value.Email);
@@ -126,7 +106,6 @@
                         $(user).find('input').attr("onclick", "activateUser(" + value.Id + ")");
                         $('.jumbotron').append(user);
                             });
-                }
             },
             error: function(error) {
                 console.log(error);

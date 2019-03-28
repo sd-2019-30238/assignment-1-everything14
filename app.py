@@ -42,14 +42,22 @@ def wishlist():
 @app.route('/userHome')
 def showUserHome():
 	#check that someone has logged in correctly
-	user = session.get("user")
-	if user:
-		if user[6] == True:
-			return render_template('userHome.html', user=session.get("user"))
-		else:
-			 return render_template('error.html', error = "User payment not confirmed")
-	else:
-		return render_template('error.html', error = "Invalid User Credentials")
+    user = session.get("user")
+    if user:
+        if user[6] == True:
+            if user[4] == "librarian":
+                print("librarian")
+                return render_template('userHomeLibrarian.html', user=user)
+            elif user[4] == "user":
+                print("user")
+                return render_template('userHomeUser.html', user=user)
+            elif user[4] == "admin":
+                print("admin")
+                return render_template('userHomeUser.html', user=user)
+        else:
+            return render_template('error.html', error = "User payment not confirmed")
+    else:
+        return render_template('error.html', error = "Invalid User Credentials")
 
 
 
@@ -69,6 +77,7 @@ def signUp():
 		_name = request.form['inputName']
 		_email = request.form['inputEmail']
 		_password = request.form['inputPassword']
+		_pricingPlan = request.form['inputPricePlan']
 
 		#Make sure we got all the values	
 		if _name and _email and _password:
@@ -78,7 +87,7 @@ def signUp():
 			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role, approved_user) values (%s, %s, %s, \'user\', False)', [_name, _hashed_password, _email])
+			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s False)', [_name, _hashed_password, _email, _pricingPlan])
 			conn.commit()
 
 		else:
@@ -180,7 +189,7 @@ def getInactiveUsers():
             users = cursor.fetchall()
 
             users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3], "ApprovedUser": user[4]} for user in users]
-            return json.dumps([users_list, _user])
+            return json.dumps(users_list,)
 
         else:
             return render_template('error.html', error = 'Unauthorized Access')
@@ -242,7 +251,7 @@ def getBooks():
 
             books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
             
-            return json.dumps([books_list, _user])
+            return json.dumps(books_list)
 
         else:
             return render_template('error.html', error = 'Unauthorized Access')
