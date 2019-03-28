@@ -1,7 +1,7 @@
 #imports
 import psycopg2
 import hashlib
-from flask import Flask, render_template, json, request, session, redirect
+from flask import Flask, render_template, json, request, session, redirect, send_from_directory
 from werkzeug import generate_password_hash, check_password_hash
 
 
@@ -42,8 +42,12 @@ def wishlist():
 @app.route('/userHome')
 def showUserHome():
 	#check that someone has logged in correctly
-	if session.get("user"):
-		return render_template('userHome.html', username=session.get("user")[1])
+	user = session.get("user")
+	if user:
+		if user[6] == True:
+			return render_template('userHome.html', username=session.get("user")[1])
+		else:
+			 return render_template('error.html', error = "User payment not confirmed")
 	else:
 		return render_template('error.html', error = "Invalid User Credentials")
 
@@ -73,7 +77,7 @@ def signUp():
 			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role) values (%s, %s, %s, \'user\')', [_name, _hashed_password, _email])
+			cursor.execute('INSERT INTO users (username, password, email, role, approved_user) values (%s, %s, %s, \'user\', False)', [_name, _hashed_password, _email])
 			conn.commit()
 
 		else:
@@ -89,7 +93,6 @@ def signUp():
 		cursor.close()
 		conn.close()
 	return "OK"
-
 
 @app.route('/validateLogin', methods=['POST'])
 def validate():
@@ -126,12 +129,37 @@ def validate():
 		cursor.close()
 		conn.close()
 
-
 @app.route('/logout')
 def logout():
 	session.pop('user', None)
 	return redirect('/')
 
+"""
+@app.route('/getUsers')
+def getUsers():
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    try:
+		_user = session.get('user')
+        if _user and (_user[6] == "librarian" or user[6] == "admin"):
+            cursor.execute('SELECT id, username, email, role FROM books')
+            users = cursor.fetchall()
+
+            users_list = [{"Id": user[0], "Title": user[1], "Author": user[2], "Genre": user[3]} for user in users]
+
+            print(users_list)
+            return json.dumps(users_list)
+
+        else:
+            return render_template('error.html', error = 'Unauthorized Access')
+
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+
+    finally:
+    	cursor.close()
+    	conn.close()
+"""
 
 @app.route('/addBook',methods=['POST'])
 def addBook():
@@ -158,7 +186,6 @@ def addBook():
         cursor.close()
         conn.close()
     return redirect('/userHome')
-
 
 @app.route('/getBooks')
 def getBooks():
@@ -211,6 +238,16 @@ def viewBook(id):
         return render_template('viewBook.html', )
     else:
         return render_template('error.html', error = "Invalid User Credentials")
+
+
+
+@app.route('/js/<path:path>')
+def send_js(path):
+	return send_from_directory('view/static/js', path)
+
+@app.route('/css/<path:path>')
+def send_css(path):
+	return send_from_directory('view/static/css', path)
 
 def insertTestData():
     conn = psycopg2.connect(**connection_parameters)
