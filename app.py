@@ -45,7 +45,7 @@ def showUserHome():
 	user = session.get("user")
 	if user:
 		if user[6] == True:
-			return render_template('userHome.html', username=session.get("user")[1])
+			return render_template('userHome.html', user=session.get("user"))
 		else:
 			 return render_template('error.html', error = "User payment not confirmed")
 	else:
@@ -192,16 +192,14 @@ def getBooks():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
     try:
-        if session.get('user'):
-            _user = session.get('user')[0]
-            print(_user)
+        _user = session.get('user')
+        if _user:
             cursor.execute('SELECT id, title, author, genre FROM books')
             books = cursor.fetchall()
 
             books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
 
-            print(books_list)
-            return json.dumps(books_list)
+            return json.dumps([books_list, _user])
 
         else:
             return render_template('error.html', error = 'Unauthorized Access')
