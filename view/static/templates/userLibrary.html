@@ -4,7 +4,6 @@
 <head>
 
     <title>Your Books Everywhere!</title>
-    <script src="js/borrowBook.js"></script>
     <link rel="stylesheet" href="css/signup.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
     <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
@@ -22,9 +21,6 @@
                 <ul class="navbar-nav mr-auto">
                   <li class="nav-item active">
                     <a class="nav-link" href="logout">Logout</a>
-                  </li>
-                  <li class="navbar-nav mr-auto">
-                        <a class="nav-link" href="userLibrary">Your library</a>
                   </li>
                 </ul>
             </div>
@@ -46,7 +42,7 @@
 <script>
     $(function() {
         $.ajax({
-            url: '/getBooks',
+            url: '/getUserBooks',
             type: 'GET',
             success: function(res) {
                 var divUser = $('<div>')
@@ -58,7 +54,6 @@
                     .append($('<p>').attr('class', 'list-group-item active'))
                     .append($('<h5">Genre:</h5>').attr('class', 'list-group-item active'))
                     .append($('<h3>').attr('class', 'list-group-item active'))
-                    .append($('<input type="button" value="Borrow"></input>'))
                     .append($('<h1>&nbsp;</h1>')));
 				var book = '';
                 
@@ -68,7 +63,6 @@
 				    	$(book).find('h4').text(value.Title);
                         $(book).find('p').text(value.Author);
                         $(book).find('h3').text(value.Genre);
-                        $(book).find('input').attr("onclick", "borrowBook(" + value.Id + ")");
 				    	$('.jumbotron').append(book);
                             });
             },

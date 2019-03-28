@@ -57,7 +57,23 @@ def showUserHome():
         else:
             return render_template('error.html', error = "User payment not confirmed")
     else:
-        return render_template('error.html', error = "Invalid User Credentials")
+        return render_template('error.html', error = "Invalid User")
+
+@app.route('/userLibrary')
+def userLibrary():
+	#check that someone has logged in correctly
+    _user = session.get("user")
+    if _user:
+        if _user[6] == True:
+            if _user[4] == "user":
+                print("user here")
+                return render_template('userLibrary.html', user=_user)
+            else:
+                return render_template('error.html', error = "Invalid User")
+        else:
+            return render_template('error.html', error = "User payment not confirmed")
+    else:
+        return render_template('error.html', error = "Invalid User")
 
 
 
@@ -211,6 +227,32 @@ def activateUser(id):
 
     return redirect('/userHome')
 
+@app.route('/getUserBooks', methods=('POST',))
+def getUserBooks(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    try:
+        _user = session.get('user')
+        if _user:
+            cursor.execute('SELECT id_book FROM borrows WHERE id_user = %s', [_user[0]])
+            id_books = cursor.fetchall()
+
+            print(id_books)
+            books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in [cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [id_books[x]]).fetchone()] for x in range(len(id_books)) ]
+            
+            print(books_list)
+            return json.dumps(books_list)
+
+        else:
+            return render_template('error.html', error = 'Unauthorized Access')
+
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+
+    finally:
+    	cursor.close()
+    	conn.close()
+
 
 
 @app.route('/addBook',methods=['POST'])
@@ -288,6 +330,36 @@ def viewBook(id):
         return render_template('viewBook.html', )
     else:
         return render_template('error.html', error = "Invalid User Credentials")
+
+@app.route('/<int:id>/getBookAvailability', methods=('POST',))
+def getBookAvailability(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute('SELECT available FROM books WHERE id = %s', [id])
+    bookAvailable = cursor.fetchone()
+    
+    return bookAvailable
+
+
+
+@app.route('/<int:id>/borrowBook', methods=('POST',))
+def borrowBook(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+
+    _user = session.get("user")
+    if _user:
+        print("borrow")
+        print(_user)
+        if getBookAvailability(id):
+            cursor.execute('UPDATE books SET available = False WHERE id = %s;', [id])
+            cursor.execute('INSERT INTO borrows (id_user, id_book, status_finished) VALUES (%s, %s, False);', [_user[0], id])
+            return render_template('userLibrary.html', user=_user)
+        else: 
+            cursor.execute('INSERT INTO waiting_list (id_user, id_book) VALUES (%s, %s)', [_user[0], id])
+            return render_template('error.html', error = "Book not available. You've been added to the waiting list")
+    else:
+        return render_template('error.html', error = "Invalid User")
 
 
 
