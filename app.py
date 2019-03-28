@@ -52,6 +52,7 @@ def showUserHome():
 		return render_template('error.html', error = "Invalid User Credentials")
 
 
+
 @app.route('/signUp', methods=['POST'])
 def signUp():
 	"""
@@ -134,18 +135,26 @@ def logout():
 	session.pop('user', None)
 	return redirect('/')
 
-"""
+@app.route('/<int:id>/getUser', methods=('POST',))
+def getUser(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE id = %s', [id])
+    user = cursor.fetchone()
+    
+    return user
+
 @app.route('/getUsers')
 def getUsers():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
     try:
-		_user = session.get('user')
-        if _user and (_user[6] == "librarian" or user[6] == "admin"):
-            cursor.execute('SELECT id, username, email, role FROM books')
+        _user = session.get('user')
+        if _user and (_user[6] == "admin"):
+            cursor.execute('SELECT id, username, email, price_plan FROM users')
             users = cursor.fetchall()
 
-            users_list = [{"Id": user[0], "Title": user[1], "Author": user[2], "Genre": user[3]} for user in users]
+            users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3]} for user in users]
 
             print(users_list)
             return json.dumps(users_list)
@@ -159,7 +168,41 @@ def getUsers():
     finally:
     	cursor.close()
     	conn.close()
-"""
+
+@app.route('/getInactiveUsers')
+def getInactiveUsers():
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    try:
+        _user = session.get('user')
+        if _user and (_user[4] == "librarian"):
+            cursor.execute('SELECT id, username, email, price_plan, approved_user FROM users WHERE approved_user = False')
+            users = cursor.fetchall()
+
+            users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3], "ApprovedUser": user[4]} for user in users]
+            return json.dumps([users_list, _user])
+
+        else:
+            return render_template('error.html', error = 'Unauthorized Access')
+
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+
+    finally:
+    	cursor.close()
+    	conn.close()
+
+@app.route('/<int:id>/activateUser', methods=('POST',))
+def activateUser(id):
+    getUser(id)
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET approved_user = True WHERE id = %s', [id])
+    conn.commit()
+
+    return redirect('/userHome')
+
+
 
 @app.route('/addBook',methods=['POST'])
 def addBook():
@@ -198,7 +241,7 @@ def getBooks():
             books = cursor.fetchall()
 
             books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
-
+            
             return json.dumps([books_list, _user])
 
         else:
@@ -246,6 +289,8 @@ def send_js(path):
 @app.route('/css/<path:path>')
 def send_css(path):
 	return send_from_directory('view/static/css', path)
+
+
 
 def insertTestData():
     conn = psycopg2.connect(**connection_parameters)
