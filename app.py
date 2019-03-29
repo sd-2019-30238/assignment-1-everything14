@@ -66,7 +66,6 @@ def userLibrary():
     if _user:
         if _user[6] == True:
             if _user[4] == "user":
-                print("user here")
                 return render_template('userLibrary.html', user=_user)
             else:
                 return render_template('error.html', error = "Invalid User")
@@ -227,20 +226,24 @@ def activateUser(id):
 
     return redirect('/userHome')
 
-@app.route('/getUserBooks', methods=('POST',))
-def getUserBooks(id):
+@app.route('/getUserBooks', methods=('GET',))
+def getUserBooks():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
     try:
         _user = session.get('user')
         if _user:
-            cursor.execute('SELECT id_book FROM borrows WHERE id_user = %s', [_user[0]])
+            cursor.execute('SELECT id_book FROM borrows WHERE id_user = %s AND status_finished = False', [_user[0]])
             id_books = cursor.fetchall()
 
-            print(id_books)
-            books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in [cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [id_books[x]]).fetchone()] for x in range(len(id_books)) ]
+            books = list()
+            for x in range(len(id_books)):
+                cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [id_books[x]])
+                book = cursor.fetchall()
+                books.append(book[0])
+
+            books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
             
-            print(books_list)
             return json.dumps(books_list)
 
         else:
@@ -349,18 +352,31 @@ def borrowBook(id):
 
     _user = session.get("user")
     if _user:
-        print("borrow")
-        print(_user)
         if getBookAvailability(id):
             cursor.execute('UPDATE books SET available = False WHERE id = %s;', [id])
             cursor.execute('INSERT INTO borrows (id_user, id_book, status_finished) VALUES (%s, %s, False);', [_user[0], id])
+            conn.commit()
             return render_template('userLibrary.html', user=_user)
         else: 
             cursor.execute('INSERT INTO waiting_list (id_user, id_book) VALUES (%s, %s)', [_user[0], id])
+            conn.commit()
             return render_template('error.html', error = "Book not available. You've been added to the waiting list")
     else:
         return render_template('error.html', error = "Invalid User")
 
+@app.route('/<int:id>/returnBook', methods=('POST',))
+def returnBook(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+
+    _user = session.get("user")
+    if _user:
+        cursor.execute('UPDATE books SET available = True WHERE id = %s;', [id])
+        cursor.execute('UPDATE borrows SET status_finished = True WHERE id_user = %s AND id_book = %s', [_user[0], id])
+        conn.commit()
+        return render_template('userLibrary.html', user=_user)
+    else:
+        return render_template('error.html', error = "Invalid User")
 
 
 @app.route('/js/<path:path>')
