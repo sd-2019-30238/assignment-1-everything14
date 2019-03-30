@@ -102,7 +102,7 @@ def signUp():
 			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s False)', [_name, _hashed_password, _email, _pricingPlan])
+			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s, False)', [_name, _hashed_password, _email, _pricingPlan])
 			conn.commit()
 
 		else:
