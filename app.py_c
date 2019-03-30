@@ -22,6 +22,7 @@ connection_parameters = {
 class Recommendations(object):
     def factory(type):
         #return eval(type + "()")
+        print("in factory")
         if type == "Genres":
             return Genres()
         if type == "Trends":
@@ -29,9 +30,9 @@ class Recommendations(object):
         if type == "Topics":
             return Topics()
         assert 0, "Bad recommendation creation: " + type
-        
+
     factory = staticmethod(factory)
- 
+
 def listToDict(items):
     stats = dict()
     for i in items:
@@ -50,7 +51,7 @@ class Genres(Recommendations):
 
         cursor.execute('SELECT id_book FROM borrows WHERE id_user = %s', [_user[0]])
         user_borrows = cursor.fetchall()
-    
+
         user_genres = list()
         for i in range(len(user_borrows)):
             cursor.execute('SELECT genre FROM books WHERE id = %s', [user_borrows[i][0]])
@@ -61,7 +62,7 @@ class Genres(Recommendations):
         cursor.execute('SELECT id, title, author, genre FROM books WHERE genre = %s', [max(genre_dict, key=genre_dict.get)])
         recos = cursor.fetchall()
         return recos[:5]
- 
+
 class Trends(Recommendations):
     def getRecommendations(self):
         _user = session.get('user')
@@ -76,28 +77,24 @@ class Trends(Recommendations):
         for i in range(len(latest_borrows)):
             cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [latest_borrows[i]])
             recos.append(cursor.fetchone())
-        
+
         return recos
 
 class Topics(Recommendations):
     def getRecommendations(self):
-        #here i didn't know what is this about :-?
-        return
+    #here i didn't know what is this about :-?
 
 def recommendationsGen():
     types = Recommendations.__subclasses__()
-    for t in types[:2]:
+    for t in types:
         yield t.__name__
 
 def getUserRecommendations():
-    recommendations = [Recommendations.factory(i) for i in recommendationsGen()]
+    recommendations = [ Recommendations.factory(i) for i in recommendationsGen()]
 
-    recos = list()
     for recommendation in recommendations:
-        for rec in recommendation.getRecommendations():
-            recos.append(rec)
-    print(recos)
-    return recos
+        recommendation.getRecommendations()
+
 
 #define methods for routes (what to do and display)
 @app.route("/")
@@ -110,43 +107,31 @@ def return_main():
 
 @app.route('/showSignUp')
 def showSignUp():
-	return render_template('signup.html')
+    return render_template('signup.html')
 
 @app.route('/showSignIn')
 def showSignIn():
-	return render_template('signin.html')
+    return render_template('signin.html')
 
 @app.route('/wishlist')
 def wishlist():
-	return render_template('wishlist.html')
-
-@app.route('/allBooks')
-def allBooks():
-    _user = session.get("user")
-    if _user:
-        if _user[6] == True:
-            if _user[4] == "user":
-                return render_template('allBooks.html', user=_user)
-            else:
-                return render_template('error.html', error = "Invalid User")
-        else:
-            return render_template('error.html', error = "User payment not confirmed")
-    else:
-        return render_template('error.html', error = "Invalid User")
+    return render_template('wishlist.html')
 
 @app.route('/userHome')
 def showUserHome():
-	#check that someone has logged in correctly
-    _user = session.get("user")
-    if _user:
-        if _user[6] == True:
-            if _user[4] == "librarian":
-                return render_template('userHomeLibrarian.html', user=_user)
-            elif _user[4] == "user":
-                return render_template('userHomeUser.html', user=_user)
-            elif _user[4] == "admin":
+    #check that someone has logged in correctly
+    user = session.get("user")
+    if user:
+        if user[6] == True:
+            if user[4] == "librarian":
+                print("librarian")
+                return render_template('userHomeLibrarian.html', user=user)
+            elif user[4] == "user":
+                print("user")
+                return render_template('userHomeUser.html', user=user)
+            elif user[4] == "admin":
                 print("admin")
-                return render_template('userHomeUser.html', user=_user)
+                return render_template('userHomeUser.html', user=user)
         else:
             return render_template('error.html', error = "User payment not confirmed")
     else:
@@ -154,7 +139,7 @@ def showUserHome():
 
 @app.route('/userLibrary')
 def userLibrary():
-	#check that someone has logged in correctly
+        #check that someone has logged in correctly
     _user = session.get("user")
     if _user:
         if _user[6] == True:
@@ -171,86 +156,86 @@ def userLibrary():
 
 @app.route('/signUp', methods=['POST'])
 def signUp():
-	"""
-	method to deal with creating a new user in the Postgre Database
-	"""
-	print("signing up user...")
-	#create MySQL Connection
-	conn = psycopg2.connect(**connection_parameters)
-	#create a cursor to query the stored procedure
-	cursor = conn.cursor()
+    """
+    method to deal with creating a new user in the Postgre Database
+    """
+    print("signing up user...")
+    #create MySQL Connection
+    conn = psycopg2.connect(**connection_parameters)
+    #create a cursor to query the stored procedure
+    cursor = conn.cursor()
 
-	try:
-		#read in values from frontend
-		_name = request.form['inputName']
-		_email = request.form['inputEmail']
-		_password = request.form['inputPassword']
-		_pricingPlan = request.form['inputPricePlan']
+    try:
+                #read in values from frontend
+        _name = request.form['inputName']
+        _email = request.form['inputEmail']
+        _password = request.form['inputPassword']
+        _pricingPlan = request.form['inputPricePlan']
 
-		#Make sure we got all the values	
-		if _name and _email and _password:
-			print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
-			#hash passowrd for security
-			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
-			print("Hashed Password:", _hashed_password)
+        #Make sure we got all the values
+        if _name and _email and _password:
+            print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
+            #hash passowrd for security
+            _hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
+            print("Hashed Password:", _hashed_password)
 
-			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s, False)', [_name, _hashed_password, _email, _pricingPlan])
-			conn.commit()
+            #call jQuery to make a POST request to the DB with the info
+            cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s, False)', [_name, _hashed_password, _email, _pricingPlan])
+            conn.commit()
 
-		else:
-			print('fields not submitted')
-			return 'Enter the required fields'
+        else:
+            print('fields not submitted')
+            return 'Enter the required fields'
 
-	except Exception as ex:
-		print('got an exception: ', ex)
-		return json.dumps({'error':str(ex)})
+    except Exception as ex:
+        print('got an exception: ', ex)
+        return json.dumps({'error':str(ex)})
 
-	finally:
-		print('ending...')
-		cursor.close()
-		conn.close()
-	return "OK"
+    finally:
+        print('ending...')
+        cursor.close()
+        conn.close()
+    return "OK"
 
 @app.route('/validateLogin', methods=['POST'])
 def validate():
-	try:
-		_username = request.form['inputUsername']
-		_password = request.form['inputPassword']
-		print("Username:", _username, "\n Password:", _password)
+    try:
+        _username = request.form['inputUsername']
+        _password = request.form['inputPassword']
+        print("Username:", _username, "\n Password:", _password)
 
-		#create Postgres Connection
-		conn = psycopg2.connect(**connection_parameters)
-		#create a cursor to query the stored procedure
-		cursor = conn.cursor()
-		print("successfully connected to postgres!")
+        #create Postgres Connection
+        conn = psycopg2.connect(**connection_parameters)
+        #create a cursor to query the stored procedure
+        cursor = conn.cursor()
+        print("successfully connected to postgres!")
 
-		#get users with this username (should only be one)
-		cursor.execute("SELECT * from users where username = %s", [_username])
-		users = cursor.fetchall()
-		#acctually validate these users
-		if len(users)>0:
-			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
-			if users[0][2] == _hashed_password:
-				session['user']=users[0]
-				return redirect('/userHome')
-			else:
-				return render_template('error.html', error="incorrect username or password")
-		else:
-			return render_template('error.html', error= "incorrect username or password")
+        #get users with this username (should only be one)
+        cursor.execute("SELECT * from users where username = %s", [_username])
+        users = cursor.fetchall()
+        #acctually validate these users
+        if len(users)>0:
+            _hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
+            if users[0][2] == _hashed_password:
+                session['user']=users[0]
+                return redirect('/userHome')
+            else:
+                return render_template('error.html', error="incorrect username or password")
+        else:
+            return render_template('error.html', error= "incorrect username or password")
 
-	except Exception as ex:
-		print("Error getting username and password, Error:", ex)
-		return render_template('error.html', error = 'Missing Email Adress or Password')
+    except Exception as ex:
+        print("Error getting username and password, Error:", ex)
+        return render_template('error.html', error = 'Missing Email Adress or Password')
 
-	finally:
-		cursor.close()
-		conn.close()
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.route('/logout')
 def logout():
-	session.pop('user', None)
-	return redirect('/')
+    session.pop('user', None)
+    return redirect('/')
 
 @app.route('/<int:id>/getUser', methods=('POST',))
 def getUser(id):
@@ -258,7 +243,7 @@ def getUser(id):
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM users WHERE id = %s', [id])
     user = cursor.fetchone()
-    
+
     return user
 
 @app.route('/getUsers')
@@ -283,8 +268,8 @@ def getUsers():
         return render_template('error.html', error = str(e))
 
     finally:
-    	cursor.close()
-    	conn.close()
+        cursor.close()
+        conn.close()
 
 @app.route('/getInactiveUsers')
 def getInactiveUsers():
@@ -306,8 +291,8 @@ def getInactiveUsers():
         return render_template('error.html', error = str(e))
 
     finally:
-    	cursor.close()
-    	conn.close()
+        cursor.close()
+        conn.close()
 
 @app.route('/<int:id>/activateUser', methods=('POST',))
 def activateUser(id):
@@ -336,7 +321,7 @@ def getUserBooks():
                 books.append(book[0])
 
             books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
-            
+
             return json.dumps(books_list)
 
         else:
@@ -346,8 +331,8 @@ def getUserBooks():
         return render_template('error.html', error = str(e))
 
     finally:
-    	cursor.close()
-    	conn.close()
+        cursor.close()
+        conn.close()
 
 
 
@@ -365,7 +350,7 @@ def addBook():
             cursor = conn.cursor()
             cursor.execute("INSERT INTO books (title, author, genre, available) values (%s, %s, %s, True)", (_title, _author, _genre))
             conn.commit()
- 
+
         else:
             return render_template('error.html',error = 'Unauthorized Access')
     except Exception as e:
@@ -377,8 +362,8 @@ def addBook():
         conn.close()
     return redirect('/userHome')
 
-@app.route('/getAllBooks')
-def getAllBooks():
+@app.route('/getRecommendedBooks')
+def getBooks():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
     try:
@@ -388,6 +373,8 @@ def getAllBooks():
             books = cursor.fetchall()
             books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
 
+            getUserRecommendations()
+
             return json.dumps(books_list)
 
         else:
@@ -397,29 +384,8 @@ def getAllBooks():
         return render_template('error.html', error = str(e))
 
     finally:
-    	cursor.close()
-    	conn.close()
-
-@app.route('/getRecommendedBooks')
-def getRecommendedBooks():
-    conn = psycopg2.connect(**connection_parameters)
-    cursor = conn.cursor()
-    try:
-        _user = session.get('user')
-        if _user:
-            books = getUserRecommendations()
-            books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
-            return json.dumps(books_list)
-
-        else:
-            return render_template('error.html', error = 'Unauthorized Access')
-
-    except Exception as e:
-        return render_template('error.html', error = str(e))
-
-    finally:
-    	cursor.close()
-    	conn.close()
+        cursor.close()
+        conn.close()
 
 @app.route('/<int:id>/getBook', methods=('POST',))
 def getBook(id):
@@ -427,7 +393,7 @@ def getBook(id):
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM books WHERE id = %s', [id])
     book = cursor.fetchone()
-    
+
     return book
 
 @app.route('/<int:id>/deleteBook', methods=('POST',))
@@ -453,7 +419,7 @@ def getBookAvailability(id):
     cursor = conn.cursor()
     cursor.execute('SELECT available FROM books WHERE id = %s', [id])
     bookAvailable = cursor.fetchone()
-    
+
     return bookAvailable
 
 
@@ -470,7 +436,7 @@ def borrowBook(id):
             cursor.execute('INSERT INTO borrows (id_user, id_book, status_finished) VALUES (%s, %s, False);', [_user[0], id])
             conn.commit()
             return render_template('userLibrary.html', user=_user)
-        else: 
+        else:
             cursor.execute('INSERT INTO waiting_list (id_user, id_book) VALUES (%s, %s)', [_user[0], id])
             conn.commit()
             return render_template('error.html', error = "Book not available. You've been added to the waiting list")
@@ -493,11 +459,11 @@ def returnBook(id):
 
 @app.route('/js/<path:path>')
 def send_js(path):
-	return send_from_directory('view/static/js', path)
+    return send_from_directory('view/static/js', path)
 
 @app.route('/css/<path:path>')
 def send_css(path):
-	return send_from_directory('view/static/css', path)
+    return send_from_directory('view/static/css', path)
 
 
 
@@ -514,5 +480,4 @@ def insertTestData():
 
 if __name__ == "__main__":
     # insertTestData()
-    #getUserRecommendations()
     app.run()

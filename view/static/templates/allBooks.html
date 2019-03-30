@@ -34,9 +34,6 @@
             <h1>Welcome Home {{user[1]}}!</h1>
             <div class="list-group"></div>
         </div>
-        <form action="/allBooks">
-            <input type="submit" value="See all books" />
-        </form>
 
         <footer class="footer">       
         </footer>
@@ -49,7 +46,7 @@
 <script>
     $(function() {
         $.ajax({
-            url: '/getRecommendedBooks',
+            url: '/getAllBooks',
             type: 'GET',
             success: function(res) {
                 var divUser = $('<div>')
