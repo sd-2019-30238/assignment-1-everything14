@@ -487,9 +487,18 @@ def returnBook(id):
         cursor.execute('UPDATE books SET available = True WHERE id = %s;', [id])
         cursor.execute('UPDATE borrows SET status_finished = True WHERE id_user = %s AND id_book = %s', [_user[0], id])
         conn.commit()
+
+        cursor.execute('SELECT id_user from waiting_list WHERE id_book = %s', [id])
+        userFromWaitingList = cursor.fetchall()
+        if userFromWaitingList != []:
+            for idUser in userFromWaitingList:
+                if idUser not in gSendNotification:
+                    gSendNotification[idUser] = list()
+            gSendNotification[idUser].append(id)
         return render_template('userLibrary.html', user=_user)
     else:
         return render_template('error.html', error = "Invalid User")
+
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -499,7 +508,34 @@ def send_js(path):
 def send_css(path):
 	return send_from_directory('view/static/css', path)
 
+gSendNotification = dict()
+@app.route('/getNotification')
+def getNotification():
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    try:
+        _user = session.get('user')
+        print(_user)
+        print(gSendNotification)
+        books = list()
+        for bookId in gSendNotification[_user[0]]:
+            cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [bookId])
+            entry = cursor.fetchall()
+            print(entry)
+            print(entry[0])
+            books.append(entry[0])
+        books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
+        print(books_list)
+        del gSendNotification[_user[0]]
+        print(gSendNotification)
+        return json.dumps(books_list)
 
+    except Exception as e:
+        return render_template('error.html', error = str(e))
+
+    finally:
+    	cursor.close()
+    	conn.close()
 
 def insertTestData():
     conn = psycopg2.connect(**connection_parameters)

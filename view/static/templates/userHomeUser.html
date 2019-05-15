@@ -10,7 +10,7 @@
     <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
 </head>
 
-<body>
+<body onload="socket();">
     <div class="container">
         <nav class="navbar navbar-expand-md navbar-dark bg-dark">
             <h3 class="navbar-brand">Your Books Everywhere!</h3>
@@ -45,6 +45,34 @@
 </body>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+<script>
+    var nIntervId;
+ 
+    function socket() {
+      nIntervId = setInterval(print, 2000);
+    }
+ 
+    function print() {
+        $.ajax({
+            url: '/getNotification',
+            type: 'GET',
+            success: function(res) {
+                
+				var books = 'Books available from your waiting list:';
+                
+                $.each(JSON.parse(res),function(index, value){
+				    books = books + ' ' + value.Title;
+                });
+
+                alert(books);
+            },
+            error: function(error) {
+                console.log(error);
+            }
+        });
+    }
+</script>
 
 <script>
     $(function() {
