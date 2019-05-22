@@ -3,13 +3,15 @@ import psycopg2
 import hashlib
 from flask import Flask, render_template, json, request, session, redirect, send_from_directory
 from werkzeug import generate_password_hash, check_password_hash
+from flask_socketio import SocketIO, send, emit
 
 
 #initialize the flask and SQL Objects
 app = Flask(__name__, template_folder="view/static/templates")
-
 #initializa secret key
 app.secret_key='This is my secret key'
+socketio = SocketIO(app)
+dict_user_socket = dict()
 
 connection_parameters = {
         'host':"localhost",
@@ -18,7 +20,7 @@ connection_parameters = {
         'password': "docker"
     }
 
-#classes
+#classes recos
 class Recommendations(object):
     def factory(type):
         #return eval(type + "()")
@@ -96,8 +98,97 @@ def getUserRecommendations():
     for recommendation in recommendations:
         for rec in recommendation.getRecommendations():
             recos.append(rec)
-    print(recos)
     return recos
+
+
+#classes observer
+import abc
+
+class Subject:
+    """
+    Know its observers. Any number of Observer objects may observe a
+    subject.
+    Send a notification to its observers when its state changes.
+    """
+    def __init__(self):
+        self._observers = set()
+        self._subject_state = None
+
+    def attach(self, observer):
+        observer._subject = self
+        self._observers.add(observer)
+
+    def detach(self, observer):
+        observer._subject = None
+        self._observers.discard(observer)
+
+    def _notify(self, list_id):
+        for observer in self._observers:
+            if observer.user_id in list_id:
+                observer.update(self._subject_state)
+
+    @property
+    def subject_state(self):
+        return self._subject_state
+
+    @subject_state.setter
+    def subject_state(self, book, list_id):
+        self._subject_state = book
+        self._notify(list_id)
+
+
+class Observer(metaclass=abc.ABCMeta):
+    """
+    Define an updating interface for objects that should be notified of
+    changes in a subject.
+    """
+
+    def __init__(self):
+        self._subject = None
+        self._observer_state = None
+
+    @abc.abstractmethod
+    def update(self, arg):
+        pass
+
+
+class ConcreteObserver(Observer):
+    """
+    Implement the Observer updating interface to keep its state
+    consistent with the subject's.
+    Store state that should stay consistent with the subject's.
+    """
+    def __init__(self, _id, _sid, _namespace):
+        self._subject = None
+        self._observer_state = None
+        self._user_id = _id
+        self.sid = _sid
+        self.namespace = _namespace
+
+    def update(self, arg):
+        self._observer_state = arg
+        books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in self._observer_state]
+            
+        json.dumps(books_list)
+        handle_message(json.dumps(books_list), self.namespace)
+
+subject = Subject()
+
+@socketio.on('client_connected')
+def handle_client_connect_event(json):
+    _user = session.get("user")
+    if _user:
+        concrete_observer = ConcreteObserver(_user[0], request.sid, request.namespace)
+        subject.attach(concrete_observer)
+    else:
+        return render_template('error.html', error = "Invalid User")
+    print('received json: {0}'.format(str(json)))
+
+@socketio.on('message')
+def handle_message(message, room):
+    send(message, namespace)
+
+
 
 #define methods for routes (what to do and display)
 @app.route("/")
@@ -139,13 +230,13 @@ def showUserHome():
 	#check that someone has logged in correctly
     _user = session.get("user")
     if _user:
+        #handle_message('Welcome!')
         if _user[6] == True:
             if _user[4] == "librarian":
                 return render_template('userHomeLibrarian.html', user=_user)
             elif _user[4] == "user":
                 return render_template('userHomeUser.html', user=_user)
             elif _user[4] == "admin":
-                print("admin")
                 return render_template('userHomeUser.html', user=_user)
         else:
             return render_template('error.html', error = "User payment not confirmed")
@@ -192,7 +283,6 @@ def signUp():
 			print("Email:", _email, "\n", "Name:", _name, "\n", "Password:", _password)
 			#hash passowrd for security
 			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
-			print("Hashed Password:", _hashed_password)
 
 			#call jQuery to make a POST request to the DB with the info
 			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s, False)', [_name, _hashed_password, _email, _pricingPlan])
@@ -223,7 +313,6 @@ def validate():
 		conn = psycopg2.connect(**connection_parameters)
 		#create a cursor to query the stored procedure
 		cursor = conn.cursor()
-		print("successfully connected to postgres!")
 
 		#get users with this username (should only be one)
 		cursor.execute("SELECT * from users where username = %s", [_username])
@@ -273,7 +362,6 @@ def getUsers():
 
             users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3]} for user in users]
 
-            print(users_list)
             return json.dumps(users_list)
 
         else:
@@ -353,14 +441,12 @@ def getUserBooks():
 
 @app.route('/addBook',methods=['POST'])
 def addBook():
-    print("in addBook")
     try:
         if session.get('user'):
             _title = request.form['inputTitle']
             _genre = request.form['inputGenre']
             _author = request.form['inputAuthor']
             _user = session.get('user')[0]
-            print("title:",_title,"\n genre:",_genre, "\n author: ", _author, "\n user:",_user)
             conn = psycopg2.connect(**connection_parameters)
             cursor = conn.cursor()
             cursor.execute("INSERT INTO books (title, author, genre, available) values (%s, %s, %s, True)", (_title, _author, _genre))
@@ -490,15 +576,12 @@ def returnBook(id):
 
         cursor.execute('SELECT id_user from waiting_list WHERE id_book = %s', [id])
         userFromWaitingList = cursor.fetchall()
-        if userFromWaitingList != []:
-            for idUser in userFromWaitingList:
-                if idUser not in gSendNotification:
-                    gSendNotification[idUser] = list()
-            gSendNotification[idUser].append(id)
+        cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [bookId])
+        book = cursor.fetchall()
+        subject.subject_state(book[0], userFromWaitingList)
         return render_template('userLibrary.html', user=_user)
     else:
         return render_template('error.html', error = "Invalid User")
-
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -508,34 +591,7 @@ def send_js(path):
 def send_css(path):
 	return send_from_directory('view/static/css', path)
 
-gSendNotification = dict()
-@app.route('/getNotification')
-def getNotification():
-    conn = psycopg2.connect(**connection_parameters)
-    cursor = conn.cursor()
-    try:
-        _user = session.get('user')
-        print(_user)
-        print(gSendNotification)
-        books = list()
-        for bookId in gSendNotification[_user[0]]:
-            cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [bookId])
-            entry = cursor.fetchall()
-            print(entry)
-            print(entry[0])
-            books.append(entry[0])
-        books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
-        print(books_list)
-        del gSendNotification[_user[0]]
-        print(gSendNotification)
-        return json.dumps(books_list)
 
-    except Exception as e:
-        return render_template('error.html', error = str(e))
-
-    finally:
-    	cursor.close()
-    	conn.close()
 
 def insertTestData():
     conn = psycopg2.connect(**connection_parameters)
