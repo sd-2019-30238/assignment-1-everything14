@@ -112,7 +112,6 @@ class Subject:
     """
     def __init__(self):
         self._observers = set()
-        self._subject_state = None
 
     def attach(self, observer):
         observer._subject = self
@@ -122,20 +121,10 @@ class Subject:
         observer._subject = None
         self._observers.discard(observer)
 
-    def _notify(self, list_id):
+    def notify(self, book, list_id):
         for observer in self._observers:
             if observer.user_id in list_id:
-                observer.update(self._subject_state)
-
-    @property
-    def subject_state(self):
-        return self._subject_state
-
-    @subject_state.setter
-    def subject_state(self, book, list_id):
-        self._subject_state = book
-        self._notify(list_id)
-
+                observer.update(book)
 
 class Observer(metaclass=abc.ABCMeta):
     """
@@ -145,7 +134,6 @@ class Observer(metaclass=abc.ABCMeta):
 
     def __init__(self):
         self._subject = None
-        self._observer_state = None
 
     @abc.abstractmethod
     def update(self, arg):
@@ -160,16 +148,12 @@ class ConcreteObserver(Observer):
     """
     def __init__(self, _id, _sid, _namespace):
         self._subject = None
-        self._observer_state = None
         self._user_id = _id
         self.sid = _sid
         self.namespace = _namespace
 
-    def update(self, arg):
-        self._observer_state = arg
-        books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in self._observer_state]
-            
-        json.dumps(books_list)
+    def update(self, book):
+        books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]}]
         handle_message(json.dumps(books_list), self.namespace)
 
 subject = Subject()
@@ -184,8 +168,7 @@ def handle_client_connect_event(json):
         return render_template('error.html', error = "Invalid User")
     print('received json: {0}'.format(str(json)))
 
-@socketio.on('message')
-def handle_message(message, room):
+def handle_message(message, namespace):
     send(message, namespace)
 
 
@@ -576,9 +559,9 @@ def returnBook(id):
 
         cursor.execute('SELECT id_user from waiting_list WHERE id_book = %s', [id])
         userFromWaitingList = cursor.fetchall()
-        cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [bookId])
+        cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [id])
         book = cursor.fetchall()
-        subject.subject_state(book[0], userFromWaitingList)
+        subject.notify(book[0], userFromWaitingList)
         return render_template('userLibrary.html', user=_user)
     else:
         return render_template('error.html', error = "Invalid User")
