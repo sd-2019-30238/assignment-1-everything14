@@ -3,6 +3,7 @@ import psycopg2
 import hashlib
 from flask import Flask, render_template, json, request, session, redirect, send_from_directory
 from werkzeug import generate_password_hash, check_password_hash
+import abc
 
 
 #initialize the flask and SQL Objects
@@ -98,6 +99,64 @@ def getUserRecommendations():
             recos.append(rec)
     print(recos)
     return recos
+
+
+# classes decorator
+class Component(metaclass=abc.ABCMeta):
+    """
+    Define the interface for objects that can have responsibilities
+    added to them dynamically.
+    """
+
+    @abc.abstractmethod
+    def getAvailability(self):
+        pass
+
+class BookClass(Component):
+    """
+    Define an object to which additional responsibilities can be
+    attached.
+    """
+
+    def getAvailability(self):
+        return "Book"
+
+class Decorator(Component, metaclass=abc.ABCMeta):
+    """
+    Maintain a reference to a Component object and define an interface
+    that conforms to Component's interface.
+    """
+
+    def __init__(self, book, ownership):
+        self.book = book
+        self.book.ownership = ownership
+
+    def getAvailability(self):
+        return self.book.getAvailability()
+
+class BorrowedDecorator(Decorator):
+    """
+    Add responsibilities to the component.
+    """
+
+    def __init__(self, book):
+        Decorator.__init__(self, book, "Borrowed")
+
+    def getAvailability(self):
+        return self.getAvailability() + " is borrowed."
+
+class UnavailableDecorator(Decorator):
+    """
+    Add responsibilities to the component.
+    """
+    
+    def __init__(self, book):
+        Decorator.__init__(self, book, "Unavailable")
+
+    def getAvailability(self):
+        return self.getAvailability() + " is unavailable."
+
+
 
 #define methods for routes (what to do and display)
 @app.route("/")
