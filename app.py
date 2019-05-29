@@ -3,6 +3,7 @@ import psycopg2
 import hashlib
 from flask import Flask, render_template, json, request, session, redirect, send_from_directory
 from werkzeug import generate_password_hash, check_password_hash
+from mediator import Mediator, BorrowBookRequest, ReturnBookRequest, SignUpUserRequest, ValidateLogin, GetUserByIdRequest, GetUsers, GetInactiveUsers, ActivateUser, GetUserBooks, AddBook, GetAllBooks, GetBook, DeleteBook
 import abc
 
 
@@ -143,19 +144,18 @@ class BorrowedDecorator(Decorator):
         Decorator.__init__(self, book, "Borrowed")
 
     def getAvailability(self):
-        return self.getAvailability() + " is borrowed."
+        return self.getAvailability() + " : " + book.ownership
 
 class UnavailableDecorator(Decorator):
     """
     Add responsibilities to the component.
     """
-    
+
     def __init__(self, book):
         Decorator.__init__(self, book, "Unavailable")
 
     def getAvailability(self):
-        return self.getAvailability() + " is unavailable."
-
+        return self.getAvailability() + " : " + book.ownership
 
 
 #define methods for routes (what to do and display)
@@ -238,6 +238,7 @@ def signUp():
 	conn = psycopg2.connect(**connection_parameters)
 	#create a cursor to query the stored procedure
 	cursor = conn.cursor()
+	mediator = Mediator()
 
 	try:
 		#read in values from frontend
@@ -253,10 +254,8 @@ def signUp():
 			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
 			print("Hashed Password:", _hashed_password)
 
-			#call jQuery to make a POST request to the DB with the info
-			cursor.execute('INSERT INTO users (username, password, email, role, price_plan, approved_user) values (%s, %s, %s, \'user\', %s, False)', [_name, _hashed_password, _email, _pricingPlan])
-			conn.commit()
-
+			method = SignUpUserRequest(conn, cursor, _name, _hashed_password, _email, _pricingPlan)
+			mediator.execute(method)
 		else:
 			print('fields not submitted')
 			return 'Enter the required fields'
@@ -283,10 +282,13 @@ def validate():
 		#create a cursor to query the stored procedure
 		cursor = conn.cursor()
 		print("successfully connected to postgres!")
+		mediator = Mediator()
+		
+		method = ValidateLogin(cursor, _username)
+		users = mediator.execute(method)
 
-		#get users with this username (should only be one)
-		cursor.execute("SELECT * from users where username = %s", [_username])
-		users = cursor.fetchall()
+		print(users)
+
 		#acctually validate these users
 		if len(users)>0:
 			_hashed_password = hashlib.md5(_password.encode('utf-8')).hexdigest()
@@ -300,7 +302,7 @@ def validate():
 
 	except Exception as ex:
 		print("Error getting username and password, Error:", ex)
-		return render_template('error.html', error = 'Missing Email Adress or Password')
+		return render_template('error.html', error = 'Missing Username or Password')
 
 	finally:
 		cursor.close()
@@ -315,8 +317,10 @@ def logout():
 def getUser(id):
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE id = %s', [id])
-    user = cursor.fetchone()
+    mediator = Mediator()
+
+    method = GetUserByIdRequest(cursor, id)
+    user = mediator.execute(method)
     
     return user
 
@@ -324,17 +328,18 @@ def getUser(id):
 def getUsers():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
+
     try:
         _user = session.get('user')
         if _user and (_user[6] == "admin"):
-            cursor.execute('SELECT id, username, email, price_plan FROM users')
-            users = cursor.fetchall()
+            
+            method = GetUsers(cursor)
+            users = mediator.execute(method)
 
             users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3]} for user in users]
 
-            print(users_list)
             return json.dumps(users_list)
-
         else:
             return render_template('error.html', error = 'Unauthorized Access')
 
@@ -349,11 +354,14 @@ def getUsers():
 def getInactiveUsers():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
+
     try:
         _user = session.get('user')
         if _user and (_user[4] == "librarian"):
-            cursor.execute('SELECT id, username, email, price_plan, approved_user FROM users WHERE approved_user = False')
-            users = cursor.fetchall()
+            
+            method = GetInactiveUsers(cursor)
+            users = mediator.execute(method)
 
             users_list = [{"Id": user[0], "Username": user[1], "Email": user[2], "PricePlan": user[3], "ApprovedUser": user[4]} for user in users]
             return json.dumps(users_list,)
@@ -373,8 +381,10 @@ def activateUser(id):
     getUser(id)
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    cursor.execute('UPDATE users SET approved_user = True WHERE id = %s', [id])
-    conn.commit()
+    mediator = Mediator()
+
+    method = ActivateUser(conn, cursor, id)
+    mediator.execute(method)
 
     return redirect('/userHome')
 
@@ -382,17 +392,14 @@ def activateUser(id):
 def getUserBooks():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
+
     try:
         _user = session.get('user')
         if _user:
-            cursor.execute('SELECT id_book FROM borrows WHERE id_user = %s AND status_finished = False', [_user[0]])
-            id_books = cursor.fetchall()
-
-            books = list()
-            for x in range(len(id_books)):
-                cursor.execute('SELECT id, title, author, genre FROM books WHERE id = %s', [id_books[x]])
-                book = cursor.fetchall()
-                books.append(book[0])
+            
+            method = GetUserBooks(cursor, _user)
+            books = mediator.execute(method)
 
             books_list = [ {"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
             
@@ -422,9 +429,10 @@ def addBook():
             print("title:",_title,"\n genre:",_genre, "\n author: ", _author, "\n user:",_user)
             conn = psycopg2.connect(**connection_parameters)
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO books (title, author, genre, available) values (%s, %s, %s, True)", (_title, _author, _genre))
-            conn.commit()
- 
+            mediator = Mediator()
+            
+            method = ActivateUser(conn, cursor, [_title, _author, _genre])
+            mediator.execute(method)
         else:
             return render_template('error.html',error = 'Unauthorized Access')
     except Exception as e:
@@ -440,11 +448,13 @@ def addBook():
 def getAllBooks():
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
+
     try:
         _user = session.get('user')
         if _user:
-            cursor.execute('SELECT id, title, author, genre FROM books')
-            books = cursor.fetchall()
+            method = GetAllBooks(cursor)
+            books = mediator.execute(method)
             books_list = [{"Id": book[0], "Title": book[1], "Author": book[2], "Genre": book[3]} for book in books]
 
             return json.dumps(books_list)
@@ -484,18 +494,18 @@ def getRecommendedBooks():
 def getBook(id):
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM books WHERE id = %s', [id])
-    book = cursor.fetchone()
+    method = GetBook(cursor, id)
+    book = mediator.execute(method)
     
     return book
 
 @app.route('/<int:id>/deleteBook', methods=('POST',))
 def deleteBook(id):
-    getBook(id)
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM books WHERE id = %s', [id])
-    conn.commit()
+    
+    method = DeleteBook(conn, cursor, id)
+    mediator.execute(method)
 
     return redirect('/userHome')
 
@@ -506,14 +516,7 @@ def viewBook(id):
     else:
         return render_template('error.html', error = "Invalid User Credentials")
 
-@app.route('/<int:id>/getBookAvailability', methods=('POST',))
-def getBookAvailability(id):
-    conn = psycopg2.connect(**connection_parameters)
-    cursor = conn.cursor()
-    cursor.execute('SELECT available FROM books WHERE id = %s', [id])
-    bookAvailable = cursor.fetchone()
-    
-    return bookAvailable
+
 
 
 
@@ -521,33 +524,40 @@ def getBookAvailability(id):
 def borrowBook(id):
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
 
     _user = session.get("user")
     if _user:
-        if getBookAvailability(id):
-            cursor.execute('UPDATE books SET available = False WHERE id = %s;', [id])
-            cursor.execute('INSERT INTO borrows (id_user, id_book, status_finished) VALUES (%s, %s, False);', [_user[0], id])
-            conn.commit()
+        method = BorrowBookRequest(id, conn, cursor, _user)
+        if mediator.execute(method):
+            cursor.close()
+            conn.close()
             return render_template('userLibrary.html', user=_user)
-        else: 
-            cursor.execute('INSERT INTO waiting_list (id_user, id_book) VALUES (%s, %s)', [_user[0], id])
-            conn.commit()
+        else:
+            cursor.close()
+            conn.close()
             return render_template('error.html', error = "Book not available. You've been added to the waiting list")
     else:
+        cursor.close()
+        conn.close()
         return render_template('error.html', error = "Invalid User")
 
 @app.route('/<int:id>/returnBook', methods=('POST',))
 def returnBook(id):
     conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
+    mediator = Mediator()
 
     _user = session.get("user")
     if _user:
-        cursor.execute('UPDATE books SET available = True WHERE id = %s;', [id])
-        cursor.execute('UPDATE borrows SET status_finished = True WHERE id_user = %s AND id_book = %s', [_user[0], id])
-        conn.commit()
+        method = ReturnBookRequest(id, conn, cursor, _user)
+        mediator.execute(method)
+        cursor.close()
+        conn.close()
         return render_template('userLibrary.html', user=_user)
     else:
+        cursor.close()
+        conn.close()
         return render_template('error.html', error = "Invalid User")
 
 @app.route('/js/<path:path>')

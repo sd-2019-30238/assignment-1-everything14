@@ -1,3 +1,5 @@
 .vscode/*
 reindent.py
+__pycache__
+
 
