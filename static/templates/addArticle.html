@@ -3,7 +3,7 @@
  
 <head>
 
-    <title>Python Flask Bucket List App</title>
+    <title>Your Books Everywhere!</title>
 
     <link rel="stylesheet" href="../static/css/signup.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
@@ -15,28 +15,15 @@
     <div class="container">
         <!--navbar-->
         <nav class="navbar navbar-expand-md navbar-dark bg-dark">
-            <h3 class="navbar-brand">Python Flask App</h3>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample05" aria-controls="navbarsExample05" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarsExample05">
-                <ul class="navbar-nav mr-auto">
-                  <li class="nav-item active">
-                    <a class="nav-link" href="logout">Logout</a>
-                  </li>
-                  <li class="navbar-nav mr-auto">
-                    <a class="nav-link" href="wishlist">WishList</a>
-                  </li>
-                </ul>
-            </div>
+            <h3 class="navbar-brand">Your Books Everywhere!</h3>
         </nav>
 
         <section>
             <div class="jumbotron">
-            <form class="form-horizontal" method="post" action="/addWish">
+            <form class="form-horizontal" method="post" action="/addArticle">
                 <fieldset>
                     <!-- Form Name -->
-                    <legend>Create Your Wish</legend>
+                    <legend>Add an articleeee</legend>
  
                     <!-- Text input-->
                     <div class="form-group">
@@ -46,19 +33,19 @@
                         </div>
                     </div>
  
-                    <!-- Textarea -->
+                    <!-- Text input -->
                     <div class="form-group">
-                        <label class="col-md-4 control-label" for="txtPost">Post</label>
+                        <label class="col-md-4 control-label" for="txtText">Text</label>
                         <div class="col-md-4">
-                            <textarea class="form-control" id="txtPost" name="inputDescription" placeholder="Description"></textarea>
+                            <input id="txtText" name="inputText" type="text" placeholder="Text" class="form-control input-md">
                         </div>
                     </div>
- 
+
                     <!-- Button -->
                     <div class="form-group">
                         <label class="col-md-4 control-label" for="singlebutton"></label>
                         <div class="col-md-4">
-                            <input id="singlebutton" name="singlebutton" class="btn btn-primary" type="submit" value="Publish" />
+                            <input id="singlebutton" name="singlebutton" class="btn btn-primary" type="submit" value="Add" />
                         </div>
                     </div>
  

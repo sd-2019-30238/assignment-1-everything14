@@ -1,13 +1,14 @@
 #imports
 import psycopg2
 import hashlib
-from flask import Flask, render_template, json, request, session, redirect
+from flask import Flask, render_template, json, request, session, redirect, send_from_directory
 from werkzeug import generate_password_hash, check_password_hash
-from flaskext.mysql import MySQL
+
+import datetime
 
 
 #initialize the flask and SQL Objects
-app = Flask(__name__)
+app = Flask(__name__, template_folder="static/templates")
 
 #initializa secret key
 app.secret_key='This is my secret key'
@@ -22,29 +23,81 @@ connection_parameters = {
 #define methods for routes (what to do and display)
 @app.route("/")
 def main():
-    return render_template('index.html')
+	_user = session.get("user")
+	if _user:
+		return render_template('servicii.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('servicii.html', id = 0, username = 0)
 
-@app.route("/main")
-def return_main():
-    return render_template('index.html')
+@app.route("/index")
+def showIndex():
+	_user = session.get("user")
+	if _user:
+		return render_template('servicii.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('servicii.html', id = 0, username = 0)
 
-@app.route('/showSignUp')
+@app.route('/showSignup')
 def showSignUp():
 	return render_template('signup.html')
 
-@app.route('/showSignIn')
-def showSignIn():
-	return render_template('signin.html')
+@app.route('/login')
+def login():
+	return render_template('login.html')
 
-@app.route('/wishlist')
-def wishlist():
-	return render_template('wishlist.html')
+@app.route('/addArticleForm')
+def addArticleForm():
+	_user = session.get("user")
+	if _user:
+		return render_template('addArticle.html')
+	else:
+		return render_template('error.html', error = "Invalid User Credentials")
+
+@app.route('/despreNoi')
+def showDespreNoi():
+	_user = session.get("user")
+	if _user:
+		return render_template('despreNoi.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('despreNoi.html', id = 0, username = 0)
+
+@app.route('/viewMessages')
+def showViewMessages():
+	_user = session.get("user")
+	if _user:
+		return render_template('viewMessages.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('error.html', error = "Invalid User Credentials")
+
+@app.route('/servicii')
+def showServicii():
+	_user = session.get("user")
+	if _user:
+		return render_template('servicii.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('servicii.html', id = 0, username = 0)
+
+@app.route('/blog')
+def showBlog():
+	_user = session.get("user")
+	if _user:
+		return render_template('blog.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('blog.html', id = 0, username = 0)
+
+@app.route('/contact')
+def showContact():
+	_user = session.get("user")
+	if _user:
+		return render_template('contact.html', id =_user[0], username=_user[1])
+	else:
+		return render_template('contact.html', id = 0, username = 0)
 
 @app.route('/userHome')
 def showUserHome():
-	#check that someone has logged in correctly
-	if session.get("user"):
-		return render_template('userHome.html', username=session.get("user")[1])
+	_user = session.get("user")
+	if _user:
+		return render_template('userHome.html', id =_user[0], username=_user[1])
 	else:
 		return render_template('error.html', error = "Invalid User Credentials")
 
@@ -54,19 +107,13 @@ def logout():
 	return redirect('/')
 
 @app.route('/validateLogin', methods=['POST'])
-def validate():
+def validateLogin():
 	try:
 		_username = request.form['inputUsername']
 		_password = request.form['inputPassword']
-		print("Username:", _username, "\n Password:", _password)
-
-		#create Postgres Connection
 		conn = psycopg2.connect(**connection_parameters)
-		#create a cursor to query the stored procedure
 		cursor = conn.cursor()
-		print("successfully connected to postgres!")
 
-		#get users with this username (should only be one)
 		cursor.execute("SELECT * from users where username = %s", [_username])
 		users = cursor.fetchall()
 		#acctually validate these users
@@ -94,7 +141,6 @@ def signUp():
 	method to deal with creating a new user in the MySQL Database
 	"""
 	print("signing up user...")
-	#create MySQL Connection
 	conn = psycopg2.connect(**connection_parameters)
 	#create a cursor to query the stored procedure
 	cursor = conn.cursor()
@@ -130,68 +176,85 @@ def signUp():
 		conn.close()
 	return "OK"
 
-@app.route('/addWish',methods=['POST'])
-def addWish():
-    print("in addWIsh")
-    try:
-        if session.get('user'):
-            _title = request.form['inputTitle']
-            _description = request.form['inputDescription']
-            _user = session.get('user')[0]
-            print("title:",_title,"\n description:",_description,"\n user:",_user)
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            cursor.callproc('sp_addWish',(_title,_description,_user))
-            data = cursor.fetchall()
- 
-            if len(data) is 0:
-                conn.commit()
-                print("finished executing addWish")
-                return redirect('/userHome')
-            else:
-                return render_template('error.html',error = 'An error occurred!')
- 
-        else:
-            return render_template('error.html',error = 'Unauthorized Access')
-    except Exception as e:
-        print("in exception for AddWish")
-        return render_template('error.html',error = str(e))
 
-    finally:
-        cursor.close()
-        conn.close()
 
-@app.route('/getWish')
-def getWish():
-    conn = psycopg2.connect()
+@app.route('/getAllArticles')
+def getAllArticles():
+	conn = psycopg2.connect(**connection_parameters)
+	cursor = conn.cursor()
+	try:
+		cursor.execute('SELECT id, title, date, text FROM articles')
+		articles = cursor.fetchall()
+		articles_list = [{"Id": article[0], "Title": article[1], "Date": article[2], "Text": article[3]} for article in articles]
+
+		return json.dumps(articles_list)
+
+	except Exception as e:
+		return render_template('error.html', error = str(e))
+
+	finally:
+		cursor.close()
+		conn.close()
+
+
+@app.route('/addArticle',methods=['GET', 'POST'])
+def addArticle():
+	print("in addArticle")
+	try:
+		_user = session.get('user')
+		if _user:
+			print(_user)
+			_title = request.form['inputTitle']
+
+			_text = request.form['inputText']
+			conn = psycopg2.connect(**connection_parameters)
+			print("aici %s" % conn)
+			cursor = conn.cursor()
+			print("aici2 %s" % cursor)
+			cursor.execute("INSERT INTO articles (title, text, date, author_id) values (%s, %s, %s, %s)", (_title, _text, datetime.datetime.now(), session.get('user')[0]))
+			conn.commit()
+		else:
+			return render_template('error.html',error = 'Unauthorized Access')
+	except Exception as e:
+		print("in exception for addArticle")
+		return render_template('error.html', error = str(e))
+
+	finally:
+		cursor.close()
+		conn.close()
+	return redirect('/userHome')
+
+
+@app.route('/<int:id>/viewArticle', methods=('POST',))
+def viewArticle(id):
+    conn = psycopg2.connect(**connection_parameters)
     cursor = conn.cursor()
-    try:
-        if session.get('user'):
-            _user = session.get('user')[0]
-            print(_user)
-            cursor.callproc('sp_GetWishByUser',(_user,))
-            wishes = cursor.fetchall()
- 
-            wishes_dict = []
-            for wish in wishes:
-                wish_dict = {
-                        'Id': wish[0],
-                        'Title': wish[1],
-                        'Description': wish[2],
-                        'Date': wish[4]}
-                wishes_dict.append(wish_dict)
+    cursor.execute('SELECT * FROM articles WHERE id = %s', [id])
+    book = cursor.fetchone()
+    
+    return render_template('viewArticle.html')
 
-            return json.dumps(wishes_dict)
 
-        else:
-            return render_template('error.html', error = 'Unauthorized Access')
+@app.route('/<int:id>/deleteArticle', methods=('POST',))
+def deleteArticle(id):
+    conn = psycopg2.connect(**connection_parameters)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM articles WHERE id = %s', [id])
+    conn.commit()
 
-    except Exception as e:
-        return render_template('error.html', error = str(e))
+    return redirect('/userHome')
 
-    finally:
-    	cursor.close()
-    	conn.close()
+
+
+
+@app.route('/js/<path:path>')
+def send_js(path):
+	return send_from_directory('static/js', path)
+
+@app.route('/css/<path:path>')
+def send_css(path):
+	return send_from_directory('static/css', path)
+
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
-$(function() {    
-    $('#btnAddWish').click(function() {
+$(function() {
+    $('#btnPublish').click(function() {
         $.ajax({
-            url: '/addWish',
+            url: '/addArticle',
             data: $('form').serialize(),
             type: 'POST',
             success: function(response) {
