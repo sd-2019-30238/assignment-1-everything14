@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+
+    <title>Iolanda Ban Contexpert</title>
+
+    <link rel="stylesheet" href="../static/css/signup.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+
+</head>
+ 
+<body>
+    <div class="container">
+        <!--navbar-->
+        <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+            <h3 class="navbar-brand">Iolanda Ban Contexpert</h3>
+        </nav>
+
+        <section>
+            <div class="jumbotron">
+            <form class="form-horizontal" method="post" action="/{{id}}/editArticle">
+                <fieldset>
+                    <!-- Form Name -->
+                    <legend>Edit article</legend>
+ 
+                    <!-- Text input-->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="txtTitle">Title</label>
+                        <div class="col-md-4">
+                            <input id="txtTitle" name="inputTitle" type="text" placeholder="Title" class="form-control input-md">
+                        </div>
+                    </div>
+ 
+                    <!-- Text input -->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="txtText">Text</label>
+                        <div class="col-md-4">
+                            <input id="txtText" name="inputText" type="text" placeholder="Text" class="form-control input-md">
+                        </div>
+                    </div>
+
+                    <!-- Button -->
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="singlebutton"></label>
+                        <div class="col-md-4">
+                            <input id="singlebutton" name="singlebutton" class="btn btn-primary" type="submit" value="Add" />
+                        </div>
+                    </div>
+ 
+                </fieldset>
+            </form>
+            </div>
+        </section>
+        </div>
+ </body>
+</html>

@@ -1,6 +1,6 @@
 from flask import Flask
 from messages import messages
-from articles import articles
+from articles import articles, insertTestData
 from users import users
 from menu import menu
 from send import send
@@ -18,4 +18,5 @@ app.register_blueprint(send)
 app.secret_key='This is my secret key'
 
 if __name__ == "__main__":
+    #insertTestData()
     app.run()

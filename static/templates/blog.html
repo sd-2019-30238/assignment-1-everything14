@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
     <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
 
+    <script src="../static/js/deleteArticle.js"></script>
+    <script src="../static/js/viewArticle.js"></script>  
+    <script src="../static/js/editArticle.js"></script>  
+
 </head>
  
 <body>
@@ -77,16 +81,20 @@
                     .append($('<h5">Text:</h5>').attr('class', 'list-group-item active'))
                     .append($('<h3>').attr('class', 'list-group-item active'))
                     .append($('<input type="button" value="View"></input>'))
+                    .append($('<input type="button" value="Edit"></input>'))
+                    .append($('<input type="button" value="Delete"></input>'))
                     .append($('<h1>&nbsp;</h1>')));
 				var article = '';
                 
                 
                     $.each(JSON.parse(res),function(index, value){
-				    	article = $(divUser).clone();
+                        article = $(divUser).clone();
 				    	$(article).find('h4').text(value.Title);
                         $(article).find('p').text(value.Date);
                         $(article).find('h3').text(value.Text);
                         $(article).find('input').attr("onclick", "viewArticle(" + value.Id + ")");
+                        $(article).find('input').next().attr("onclick", "editArticle(" + value.Id + ")");
+                        $(article).find('input').next().next().attr("onclick", "deleteArticle(" + value.Id + ")");
 				    	$('.jumbotron').append(article);
                             });
             },
