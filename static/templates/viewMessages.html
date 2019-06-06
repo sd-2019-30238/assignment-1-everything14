@@ -2,17 +2,17 @@
 <html lang="en">
  
 <head>
-    <title>Your Books Everywhere!</title>
+    <title>Iolanda Ban Contexpert</title>
     <link rel="stylesheet" href="../static/css/signup.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
-    <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
 
 </head>
  
 <body>
         <div class="container">
             <nav class="navbar navbar-expand-md navbar-dark bg-dark">
-                <h3 class="navbar-brand">Python Flask App</h3>
+                <h3 class="navbar-brand">Iolanda Ban Contexpert</h3>
                 {% if id %}
                     <span class="navbar-text">Logged in as {{username}}</span>
                 {% endif %}
@@ -49,7 +49,51 @@
                 </div>
             </nav>
         
+            <div class="jumbotron">
+                    <div class="list-group"></div>
+            </div>
+        
         </div>
     </body>
- 
-</html>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    
+    <script>
+        $(function() {
+            $.ajax({
+                url: '/getAllMessages',
+                type: 'GET',
+                success: function(res) {
+                    var divUser = $('<div>')
+                    .attr('class', 'list-group')
+                    .append($('<a>')
+                        .append($('<h5">Subject:</h5>').attr('class', 'list-group-item active'))
+                        .append($('<h4>').attr('class', 'list-group-item active'))
+                        .append($('<h5">Date:</h5>').attr('class', 'list-group-item active'))
+                        .append($('<p>').attr('class', 'list-group-item active'))
+                        .append($('<h5">Email:</h5>').attr('class', 'list-group-item active'))
+                        .append($('<h3>').attr('class', 'list-group-item active'))
+                        .append($('<h5">Text:</h5>').attr('class', 'list-group-item active'))
+                        .append($('<h2>').attr('class', 'list-group-item active'))
+                        .append($('<h1>&nbsp;</h1>')));
+                    var message = '';
+                    
+                    
+                        $.each(JSON.parse(res),function(index, value){
+                            alert(res);
+                            message = $(divUser).clone();
+                            $(message).find('h4').text(value.Subject);
+                            $(message).find('p').text(value.Date);
+                            $(message).find('h3').text(value.Email);
+                            $(message).find('h2').text(value.Text);
+                            $('.jumbotron').append(article);
+                                });
+                },
+                error: function(error) {
+                    console.log(error);
+                }
+            });
+        });
+    </script>
+     
+    </html>

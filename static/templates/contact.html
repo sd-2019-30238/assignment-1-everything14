@@ -2,17 +2,20 @@
 <html lang="en">
  
 <head>
-    <title>Your Books Everywhere!</title>
+    <title>Iolanda Ban Contexpert</title>
     <link rel="stylesheet" href="../static/css/signup.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
     <link href="http://getbootstrap.com/examples/jumbotron-narrow/jumbotron-narrow.css" rel="stylesheet">
+
+    <script src="../static/js/jquery-3.2.1.js"></script>
+    <script src="../static/js/leaveMessage.js"></script> 
 
 </head>
  
 <body>
         <div class="container">
                 <nav class="navbar navbar-expand-md navbar-dark bg-dark">
-                    <h3 class="navbar-brand">Python Flask App</h3>
+                    <h3 class="navbar-brand">Iolanda Ban Contexpert</h3>
                     {% if id %}
                         <span class="navbar-text">Logged in as {{username}}</span>
                     {% endif %}
@@ -58,6 +61,23 @@
     </div>
     <strong>Tel : </strong><span itemprop="telephone">1234567890</span><br>
     <strong>Email : </strong><span itemprop="email"><a href="mailto:email@email.ro">email@email.ro</a></span><br>
+
+    {% if id == 0 %}
+        <div class="container">
+                <div class="jumbotron">
+                    <h1>Leave a message</h1>
+                    <form class="form-signin">
+                    <label for="inputSubject" class="sr-only">Subject</label>
+                    <input type="Subject" name="inputSubject" id="inputSubject" class="form-control required" placeholder="Subject" required autofocus>
+                    <label for="inputEmail" class="sr-only">Email address</label>
+                    <input type="Email" name="inputEmail" id="inputEmail" class="form-control required" placeholder="Email address" required autofocus>
+                    <label for="inputText" class="sr-only">Text</label>
+                    <input type="Text" name="inputText" id="inputText" class="form-control required" placeholder="Text" required>
+                    <button id="btnLeaveMessage" class="btn btn-lg btn-primary btn-block" type="button">Send</button>
+                    </form>
+                </div>
+        </div>
+    {% endif %}
 
 </body>
  
